@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ArrowUpDown, ExternalLink, Phone, Mail, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useMemo } from "react";
+import { ArrowUpDown, ExternalLink, Phone, Mail, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Appointment } from "@/data/mockData";
 
 interface AppointmentsTableProps {
@@ -38,6 +39,7 @@ export function AppointmentsTable({ appointments }: AppointmentsTableProps) {
   const [sortField, setSortField] = useState<SortField>('booked_for');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const itemsPerPage = 13;
 
   const handleSort = (field: SortField) => {
@@ -49,7 +51,39 @@ export function AppointmentsTable({ appointments }: AppointmentsTableProps) {
     }
   };
 
-  const sortedAppointments = [...appointments].sort((a, b) => {
+  // Filter appointments based on search query
+  const filteredAppointments = useMemo(() => {
+    if (!searchQuery.trim()) return appointments;
+    
+    const query = searchQuery.toLowerCase();
+    return appointments.filter(appointment => {
+      // Search across all string fields
+      const searchableFields = [
+        appointment.name,
+        appointment.closer_name,
+        appointment.setter_name,
+        appointment.confirmation_disposition,
+        appointment.phone_number,
+        appointment.address,
+        appointment.email,
+        appointment.note,
+        appointment.site_survey,
+        appointment.contact_link,
+        appointment.roof_type,
+        appointment.shading,
+        appointment.appointment_type,
+        appointment.contact_ID,
+        appointment.booked_for,
+        appointment.disposition_date
+      ];
+      
+      return searchableFields.some(field => 
+        field && field.toString().toLowerCase().includes(query)
+      );
+    });
+  }, [appointments, searchQuery]);
+
+  const sortedAppointments = [...filteredAppointments].sort((a, b) => {
     const aValue = a[sortField];
     const bValue = b[sortField];
     
@@ -61,6 +95,11 @@ export function AppointmentsTable({ appointments }: AppointmentsTableProps) {
   const totalPages = Math.ceil(sortedAppointments.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedAppointments = sortedAppointments.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to first page when search changes
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const SortButton = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
     <Button
@@ -77,13 +116,14 @@ export function AppointmentsTable({ appointments }: AppointmentsTableProps) {
   return (
     <Card className="bg-dashboard-surface border-border">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <CardTitle className="text-lg font-semibold text-foreground">
               Detailed Appointments View
             </CardTitle>
             <p className="text-sm text-muted-foreground">
               Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedAppointments.length)} of {sortedAppointments.length} appointments
+              {searchQuery && ` (filtered from ${appointments.length} total)`}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -109,6 +149,17 @@ export function AppointmentsTable({ appointments }: AppointmentsTableProps) {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+        </div>
+        
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search appointments (name, closer, setter, address, phone, etc.)"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 w-full"
+          />
         </div>
       </CardHeader>
       <CardContent>
