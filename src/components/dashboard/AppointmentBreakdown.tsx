@@ -1,6 +1,4 @@
 import { useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Appointment } from "@/data/mockData";
 
@@ -9,8 +7,11 @@ interface AppointmentBreakdownProps {
 }
 
 export function AppointmentBreakdown({ appointments }: AppointmentBreakdownProps) {
+  const colors = ['#ef4444', '#3b82f6', '#eab308', '#f97316']; // red, blue, yellow, orange
+
   const breakdownData = useMemo(() => {
     const total = appointments.length;
+    if (total === 0) return [];
     
     // Credit Score Breakdown
     const creditScoreRanges = {
@@ -28,23 +29,11 @@ export function AppointmentBreakdown({ appointments }: AppointmentBreakdownProps
       else if (score >= 751 && score <= 800) creditScoreRanges['751-800']++;
     });
 
-    const creditScoreData = Object.entries(creditScoreRanges).map(([range, count]) => ({
-      category: range,
-      percentage: total > 0 ? ((count / total) * 100).toFixed(1) : '0',
-      count
-    }));
-
     // Roof Type Breakdown
     const roofTypes = appointments.reduce((acc, apt) => {
       acc[apt.roof_type] = (acc[apt.roof_type] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-
-    const roofTypeData = Object.entries(roofTypes).map(([type, count]) => ({
-      category: type,
-      percentage: total > 0 ? ((count / total) * 100).toFixed(1) : '0',
-      count
-    }));
 
     // Existing Solar Breakdown
     const solarBreakdown = appointments.reduce((acc, apt) => {
@@ -53,23 +42,11 @@ export function AppointmentBreakdown({ appointments }: AppointmentBreakdownProps
       return acc;
     }, {} as Record<string, number>);
 
-    const solarData = Object.entries(solarBreakdown).map(([status, count]) => ({
-      category: status,
-      percentage: total > 0 ? ((count / total) * 100).toFixed(1) : '0',
-      count
-    }));
-
     // Shading Breakdown
     const shadingBreakdown = appointments.reduce((acc, apt) => {
       acc[apt.shading] = (acc[apt.shading] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-
-    const shadingData = Object.entries(shadingBreakdown).map(([status, count]) => ({
-      category: status,
-      percentage: total > 0 ? ((count / total) * 100).toFixed(1) : '0',
-      count
-    }));
 
     // Appointment Type Breakdown
     const appointmentTypes = appointments.reduce((acc, apt) => {
@@ -77,78 +54,71 @@ export function AppointmentBreakdown({ appointments }: AppointmentBreakdownProps
       return acc;
     }, {} as Record<string, number>);
 
-    const appointmentTypeData = Object.entries(appointmentTypes).map(([type, count]) => ({
-      category: type,
-      percentage: total > 0 ? ((count / total) * 100).toFixed(1) : '0',
-      count
-    }));
-
-    return {
-      creditScore: creditScoreData,
-      roofType: roofTypeData,
-      existingSolar: solarData,
-      shading: shadingData,
-      appointmentType: appointmentTypeData
+    const createSegments = (data: Record<string, number>) => {
+      const entries = Object.entries(data);
+      return entries.map(([category, count], index) => ({
+        category,
+        count,
+        percentage: (count / total) * 100,
+        color: colors[index % colors.length]
+      }));
     };
+
+    return [
+      { title: 'Credit Score Ranges', segments: createSegments(creditScoreRanges) },
+      { title: 'Roof Type', segments: createSegments(roofTypes) },
+      { title: 'Existing Solar', segments: createSegments(solarBreakdown) },
+      { title: 'Shading', segments: createSegments(shadingBreakdown) },
+      { title: 'Appointment Type', segments: createSegments(appointmentTypes) }
+    ];
   }, [appointments]);
 
-  const chartConfig = {
-    percentage: {
-      label: "Percentage",
-      color: "hsl(var(--primary))",
-    },
-  };
-
-  const BreakdownChart = ({ data, title }: { data: any[], title: string }) => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base font-medium">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig} className="h-[200px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <XAxis 
-                dataKey="category" 
-                tick={{ fontSize: 12 }}
-                interval={0}
-                angle={-45}
-                textAnchor="end"
-                height={60}
+  const HorizontalSegmentedBar = ({ title, segments }: { title: string, segments: any[] }) => (
+    <div className="space-y-2">
+      <h3 className="text-sm font-medium text-foreground">{title}</h3>
+      <div className="w-full">
+        <div className="flex h-6 w-full rounded-full overflow-hidden bg-muted">
+          {segments.map((segment, index) => (
+            <div
+              key={segment.category}
+              className="h-full transition-all duration-300 hover:opacity-80"
+              style={{
+                width: `${segment.percentage}%`,
+                backgroundColor: segment.color,
+              }}
+              title={`${segment.category}: ${segment.percentage.toFixed(1)}% (${segment.count})`}
+            />
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+          {segments.map((segment, index) => (
+            <div key={segment.category} className="flex items-center gap-1">
+              <div
+                className="w-3 h-3 rounded-sm"
+                style={{ backgroundColor: segment.color }}
               />
-              <YAxis tick={{ fontSize: 12 }} />
-              <ChartTooltip 
-                content={
-                  <ChartTooltipContent 
-                    formatter={(value, name) => [
-                      `${value}% (${data.find(d => d.percentage === value)?.count || 0} appointments)`,
-                      "Percentage"
-                    ]}
-                  />
-                } 
-              />
-              <Bar 
-                dataKey="percentage" 
-                fill="hsl(var(--primary))"
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </CardContent>
-    </Card>
+              <span className="text-xs text-muted-foreground">
+                {segment.category}: {segment.percentage.toFixed(1)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 
   return (
     <div className="mb-8">
       <h2 className="text-xl font-semibold text-foreground mb-4">Appointment Breakdown</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        <BreakdownChart data={breakdownData.creditScore} title="Credit Score Ranges" />
-        <BreakdownChart data={breakdownData.roofType} title="Roof Type" />
-        <BreakdownChart data={breakdownData.existingSolar} title="Existing Solar" />
-        <BreakdownChart data={breakdownData.shading} title="Shading" />
-        <BreakdownChart data={breakdownData.appointmentType} title="Appointment Type" />
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="space-y-6">
+            {breakdownData.map((item, index) => (
+              <HorizontalSegmentedBar key={index} title={item.title} segments={item.segments} />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
