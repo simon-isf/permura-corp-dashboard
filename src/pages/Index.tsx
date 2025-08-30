@@ -6,6 +6,7 @@ import { isWithinInterval, parseISO, startOfWeek, endOfWeek } from "date-fns";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { FilterBar } from "@/components/dashboard/FilterBar";
 import { AppointmentsTable } from "@/components/dashboard/AppointmentsTable";
+import { AppointmentBreakdown } from "@/components/dashboard/AppointmentBreakdown";
 import { MetricCard } from "@/components/ui/metric-card";
 
 // Data
@@ -132,6 +133,9 @@ const Index = () => {
             />
           </div>
         </div>
+
+        {/* Appointment Breakdown Section */}
+        <AppointmentBreakdown appointments={filteredAppointments} />
 
         {/* Detailed Appointments Table */}
         <AppointmentsTable appointments={filteredAppointments} />

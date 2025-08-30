@@ -30,8 +30,9 @@ export interface Appointment {
 const closers = ['Sarah Johnson', 'Mike Chen', 'David Rodriguez', 'Emma Williams', 'James Thompson'];
 const setters = ['Alex Parker', 'Lisa Brown', 'Tony Garcia', 'Maria Lopez', 'Ryan Davis'];
 const dispositions: Appointment['confirmation_disposition'][] = ['Sat', 'Rescheduled', 'Not Interested', 'Disqualified', 'Follow-up', 'Pending'];
-const roofTypes = ['Shingle', 'Tile', 'Metal', 'Flat', 'Slate'];
-const appointmentTypes = ['Initial Consultation', 'Site Survey', 'Follow-up', 'Closing'];
+const roofTypes = ['Shingles', 'Meadows', 'Flat Roof', 'Other'];
+const appointmentTypes = ['In-Person', 'Virtual'];
+const shadingOptions = ['Yes', 'No'];
 
 // Generate realistic mock data
 export const generateMockAppointments = (count: number = 150): Appointment[] => {
@@ -62,7 +63,7 @@ export const generateMockAppointments = (count: number = 150): Appointment[] => 
       credit_score: Math.floor(Math.random() * 300) + 500,
       roof_type: roofTypes[Math.floor(Math.random() * roofTypes.length)],
       existing_solar: Math.random() > 0.7,
-      shading: Math.random() > 0.5 ? 'Minimal' : 'Moderate',
+      shading: shadingOptions[Math.floor(Math.random() * shadingOptions.length)],
       appointment_type: appointmentTypes[Math.floor(Math.random() * appointmentTypes.length)],
       confirmed: Math.random() > 0.2,
       contact_ID: `CONTACT_${String(i + 1).padStart(6, '0')}`,

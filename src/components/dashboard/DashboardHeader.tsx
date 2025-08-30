@@ -16,7 +16,7 @@ export function DashboardHeader({
           {logoUrl !== "[INSERT_LOGO_URL_HERE]" ? (
             <img 
               src={logoUrl} 
-              alt="Roofing AI Systems" 
+              alt="Premura Call Center Dashboard" 
               className="h-10 w-auto"
               onError={(e) => {
                 // Fallback to icon if image fails to load
@@ -29,7 +29,7 @@ export function DashboardHeader({
             </div>
           )}
           <div>
-            <h1 className="text-xl font-bold text-foreground">Roofing AI Systems</h1>
+            <h1 className="text-xl font-bold text-foreground">Premura Call Center Dashboard</h1>
             <p className="text-sm text-muted-foreground">Analytics Dashboard</p>
           </div>
         </div>
