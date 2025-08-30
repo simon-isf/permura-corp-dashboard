@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Users, Target, Calendar, TrendingUp, UserCheck, UserX, RotateCcw } from "lucide-react";
+import { Users, Target, Calendar, TrendingUp, UserCheck, UserX, RotateCcw, XCircle, CheckCircle } from "lucide-react";
 import { isWithinInterval, parseISO, startOfWeek, endOfWeek } from "date-fns";
 
 // Components
@@ -7,6 +7,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { FilterBar } from "@/components/dashboard/FilterBar";
 import { AppointmentsTable } from "@/components/dashboard/AppointmentsTable";
 import { AppointmentBreakdown } from "@/components/dashboard/AppointmentBreakdown";
+import { TimeSeriesChart } from "@/components/dashboard/TimeSeriesChart";
 import { MetricCard } from "@/components/ui/metric-card";
 
 // Data
@@ -60,6 +61,8 @@ const Index = () => {
   const metrics = useMemo(() => {
     const total = filteredAppointments.length;
     const sits = filteredAppointments.filter(apt => apt.confirmation_disposition === 'Sat').length;
+    const closes = filteredAppointments.filter(apt => apt.confirmation_disposition === 'Closed').length;
+    const noShows = filteredAppointments.filter(apt => apt.confirmation_disposition === 'No Show').length;
     const rescheduled = filteredAppointments.filter(apt => apt.confirmation_disposition === 'Rescheduled').length;
     const notInterested = filteredAppointments.filter(apt => apt.confirmation_disposition === 'Not Interested').length;
     const disqualified = filteredAppointments.filter(apt => apt.confirmation_disposition === 'Disqualified').length;
@@ -67,9 +70,12 @@ const Index = () => {
     return {
       total,
       sits,
+      closes,
+      noShows,
       rescheduled,
       notInterested,
       disqualified,
+      noShowsPercentage: total > 0 ? ((noShows / total) * 100).toFixed(1) : '0.0',
       rescheduledPercentage: total > 0 ? ((rescheduled / total) * 100).toFixed(1) : '0.0',
       notInterestedPercentage: total > 0 ? ((notInterested / total) * 100).toFixed(1) : '0.0',
       disqualifiedPercentage: total > 0 ? ((disqualified / total) * 100).toFixed(1) : '0.0',
@@ -89,7 +95,7 @@ const Index = () => {
         />
 
         {/* KPI Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <MetricCard
             title="Total Appointments"
             value={metrics.total}
@@ -104,12 +110,29 @@ const Index = () => {
             icon={UserCheck}
             variant="success"
           />
+          <MetricCard
+            title="Total Closes"
+            value={metrics.closes}
+            subtitle="Successfully closed deals"
+            icon={CheckCircle}
+            variant="success"
+          />
         </div>
+
+        {/* Time Series Chart */}
+        <TimeSeriesChart appointments={filteredAppointments} dateRange={filters.dateRange} />
 
         {/* Disposition Analysis Section */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-foreground mb-4">Disposition Analysis</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <MetricCard
+              title="No Show"
+              value={metrics.noShows}
+              subtitle={`${metrics.noShowsPercentage}% of total appointments`}
+              icon={XCircle}
+              variant="default"
+            />
             <MetricCard
               title="Rescheduled"
               value={metrics.rescheduled}

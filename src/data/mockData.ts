@@ -5,7 +5,7 @@ export interface Appointment {
   name: string;
   closer_name: string;
   booked_for: string;
-  confirmation_disposition: 'Sat' | 'Rescheduled' | 'Not Interested' | 'Disqualified' | 'Follow-up' | 'Pending';
+  confirmation_disposition: 'Sat' | 'Rescheduled' | 'Not Interested' | 'Disqualified' | 'Follow-up' | 'Pending' | 'No Show' | 'Closed';
   note: string;
   phone_number: string;
   address: string;
@@ -29,7 +29,7 @@ export interface Appointment {
 
 const closers = ['Sarah Johnson', 'Mike Chen', 'David Rodriguez', 'Emma Williams', 'James Thompson'];
 const setters = ['Alex Parker', 'Lisa Brown', 'Tony Garcia', 'Maria Lopez', 'Ryan Davis'];
-const dispositions: Appointment['confirmation_disposition'][] = ['Sat', 'Rescheduled', 'Not Interested', 'Disqualified', 'Follow-up', 'Pending'];
+const dispositions: Appointment['confirmation_disposition'][] = ['Sat', 'Rescheduled', 'Not Interested', 'Disqualified', 'Follow-up', 'Pending', 'No Show', 'Closed'];
 const roofTypes = ['Shingles', 'Meadows', 'Flat Roof', 'Other'];
 const appointmentTypes = ['In-Person', 'Virtual'];
 const shadingOptions = ['Yes', 'No'];
