@@ -6,7 +6,7 @@ import { LucideIcon } from "lucide-react";
 export interface MetricCardProps {
   title: string;
   value: string | number;
-  subtitle?: string;
+  subtitle?: string | React.ReactNode;
   percentage?: string;
   trend?: 'up' | 'down' | 'neutral';
   icon?: LucideIcon;
@@ -90,9 +90,9 @@ export function MetricCard({
               {value}
             </div>
             {subtitle && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <div className="text-xs text-muted-foreground mt-1">
                 {subtitle}
-              </p>
+              </div>
             )}
           </div>
           {percentage && (

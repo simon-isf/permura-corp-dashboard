@@ -124,55 +124,47 @@ const Index = () => {
 
         {/* KPI Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="space-y-2">
-            {visibleMetrics.totalAppointments && (
-              <MetricCard
-                title="Total Appointments"
-                value={metrics.total}
-                subtitle="All appointments in selected period"
-                icon={Calendar}
-                variant="info"
-              />
-            )}
-          </div>
-          <div className="space-y-2">
-            {visibleMetrics.totalSits && (
-              <>
-                <MetricCard
-                  title="Total Sits"
-                  value={metrics.sits}
-                  subtitle="Successfully sat appointments"
-                  icon={UserCheck}
-                  variant="success"
-                />
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Show Rate</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {metrics.total > 0 ? ((metrics.sits / metrics.total) * 100).toFixed(1) : '0.0'}%
-                  </p>
-                </div>
-              </>
-            )}
-          </div>
-          <div className="space-y-2">
-            {visibleMetrics.totalCloses && (
-              <>
-                <MetricCard
-                  title="Total Closes"
-                  value={metrics.closes}
-                  subtitle="Successfully closed deals"
-                  icon={CheckCircle}
-                  variant="success"
-                />
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Close Rate</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {metrics.total > 0 ? ((metrics.closes / metrics.total) * 100).toFixed(1) : '0.0'}%
-                  </p>
-                </div>
-              </>
-            )}
-          </div>
+          {visibleMetrics.totalAppointments && (
+            <MetricCard
+              title="Total Appointments"
+              value={metrics.total}
+              subtitle="All appointments in selected period"
+              icon={Calendar}
+              variant="info"
+            />
+          )}
+          {visibleMetrics.totalSits && (
+            <MetricCard
+              title="Total Sits"
+              value={metrics.sits}
+              subtitle={
+                <span>
+                  Successfully sat appointments<br />
+                  <span className="text-green-600 font-semibold">
+                    Show Rate: {metrics.total > 0 ? ((metrics.sits / metrics.total) * 100).toFixed(1) : '0.0'}%
+                  </span>
+                </span>
+              }
+              icon={UserCheck}
+              variant="success"
+            />
+          )}
+          {visibleMetrics.totalCloses && (
+            <MetricCard
+              title="Total Closes"
+              value={metrics.closes}
+              subtitle={
+                <span>
+                  Successfully closed deals<br />
+                  <span className="text-green-600 font-semibold">
+                    Close Rate: {metrics.total > 0 ? ((metrics.closes / metrics.total) * 100).toFixed(1) : '0.0'}%
+                  </span>
+                </span>
+              }
+              icon={CheckCircle}
+              variant="success"
+            />
+          )}
         </div>
 
         {/* Disposition Analysis Section */}
