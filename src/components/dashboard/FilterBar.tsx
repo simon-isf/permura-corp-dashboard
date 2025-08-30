@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { CalendarIcon, Filter, RotateCcw } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
+import { Calendar as CalendarIcon, Filter, RotateCcw, X } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ export function FilterBar({ closers, setters, onFiltersChange }: FilterBarProps)
   });
   const [selectedClosers, setSelectedClosers] = useState<string[]>([]);
   const [selectedSetters, setSelectedSetters] = useState<string[]>([]);
+  const [lastClickedDate, setLastClickedDate] = useState<Date | null>(null);
 
   const handleDateRangeChange = (newRange: { start: Date; end: Date }) => {
     setDateRange(newRange);
@@ -73,6 +74,21 @@ export function FilterBar({ closers, setters, onFiltersChange }: FilterBarProps)
     });
   };
 
+  const clearDateRange = () => {
+    const defaultRange = {
+      start: startOfWeek(today, { weekStartsOn: 1 }),
+      end: endOfWeek(today, { weekStartsOn: 1 })
+    };
+    
+    setDateRange(defaultRange);
+    setLastClickedDate(null);
+    onFiltersChange({
+      dateRange: defaultRange,
+      selectedClosers,
+      selectedSetters
+    });
+  };
+
   const resetFilters = () => {
     const defaultRange = {
       start: startOfWeek(today, { weekStartsOn: 1 }),
@@ -82,6 +98,7 @@ export function FilterBar({ closers, setters, onFiltersChange }: FilterBarProps)
     setDateRange(defaultRange);
     setSelectedClosers([]);
     setSelectedSetters([]);
+    setLastClickedDate(null);
     
     onFiltersChange({
       dateRange: defaultRange,
@@ -115,6 +132,18 @@ export function FilterBar({ closers, setters, onFiltersChange }: FilterBarProps)
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
+              <div className="p-3 border-b flex items-center justify-between">
+                <span className="text-sm font-medium">Select Date Range</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearDateRange}
+                  className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Clear
+                </Button>
+              </div>
               <Calendar
                 mode="range"
                 defaultMonth={dateRange.start}
@@ -123,8 +152,20 @@ export function FilterBar({ closers, setters, onFiltersChange }: FilterBarProps)
                   to: dateRange.end
                 } as DateRange}
                 onSelect={(range: DateRange | undefined) => {
-                  if (range?.from && range?.to) {
-                    handleDateRangeChange({ start: range.from, end: range.to });
+                  if (range?.from) {
+                    if (lastClickedDate && lastClickedDate.getTime() === range.from.getTime()) {
+                      // Double click - set both start and end to the same date
+                      handleDateRangeChange({ start: range.from, end: range.from });
+                      setLastClickedDate(null);
+                    } else {
+                      // Single click - always set as start date
+                      setLastClickedDate(range.from);
+                      if (range.to) {
+                        handleDateRangeChange({ start: range.from, end: range.to });
+                      } else {
+                        handleDateRangeChange({ start: range.from, end: range.from });
+                      }
+                    }
                   }
                 }}
                 numberOfMonths={2}

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Users, Target, Calendar, TrendingUp, UserCheck, UserX, RotateCcw, XCircle, CheckCircle } from "lucide-react";
-import { isWithinInterval, parseISO, startOfWeek, endOfWeek } from "date-fns";
+import { isWithinInterval, parseISO, startOfWeek, endOfWeek, subDays } from "date-fns";
 
 // Components
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -70,7 +70,7 @@ const Index = () => {
     });
   }, [filters]);
 
-  // Calculate KPIs
+  // Calculate KPIs with previous period comparison
   const metrics = useMemo(() => {
     const total = filteredAppointments.length;
     const sits = filteredAppointments.filter(apt => apt.confirmation_disposition === 'Sat').length;
@@ -80,6 +80,22 @@ const Index = () => {
     const notInterested = filteredAppointments.filter(apt => apt.confirmation_disposition === 'Not Interested').length;
     const disqualified = filteredAppointments.filter(apt => apt.confirmation_disposition === 'Disqualified').length;
     
+    // Calculate percentage change vs previous period
+    const currentPeriodDays = Math.ceil((filters.dateRange.end.getTime() - filters.dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
+    const previousStart = subDays(filters.dateRange.start, currentPeriodDays);
+    const previousEnd = subDays(filters.dateRange.end, currentPeriodDays);
+    
+    const previousAppointments = mockAppointments.filter(appointment => {
+      const appointmentDate = parseISO(appointment.booked_for);
+      return isWithinInterval(appointmentDate, {
+        start: previousStart,
+        end: previousEnd
+      });
+    });
+    
+    const previousTotal = previousAppointments.length;
+    const percentageChange = previousTotal > 0 ? (((total - previousTotal) / previousTotal) * 100) : 0;
+    
     return {
       total,
       sits,
@@ -88,12 +104,14 @@ const Index = () => {
       rescheduled,
       notInterested,
       disqualified,
+      percentageChange: percentageChange.toFixed(1),
+      percentageChangeNumeric: percentageChange,
       noShowsPercentage: total > 0 ? ((noShows / total) * 100).toFixed(1) : '0.0',
       rescheduledPercentage: total > 0 ? ((rescheduled / total) * 100).toFixed(1) : '0.0',
       notInterestedPercentage: total > 0 ? ((notInterested / total) * 100).toFixed(1) : '0.0',
       disqualifiedPercentage: total > 0 ? ((disqualified / total) * 100).toFixed(1) : '0.0',
     };
-  }, [filteredAppointments]);
+  }, [filteredAppointments, filters.dateRange]);
 
   const toggleMetric = (metric: string) => {
     setVisibleMetrics(prev => ({
@@ -128,7 +146,14 @@ const Index = () => {
             <MetricCard
               title="Total Appointments"
               value={metrics.total}
-              subtitle="All appointments in selected period"
+              subtitle={
+                <span>
+                  All appointments in selected period<br />
+                  <span className="text-blue-600 font-semibold">
+                    Change: {metrics.percentageChangeNumeric > 0 ? '+' : ''}{metrics.percentageChange}% vs previous period
+                  </span>
+                </span>
+              }
               icon={Calendar}
               variant="info"
             />
