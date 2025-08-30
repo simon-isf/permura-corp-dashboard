@@ -1,17 +1,22 @@
 import { Building2 } from "lucide-react";
+import { MetricsVisibilityPanel } from "./MetricsVisibilityPanel";
 
 interface DashboardHeaderProps {
   clientName?: string;
   logoUrl?: string;
+  visibleMetrics?: Record<string, boolean>;
+  onToggleMetric?: (metric: string) => void;
 }
 
 export function DashboardHeader({ 
   clientName = "{{client_name}}", 
-  logoUrl = "[INSERT_LOGO_URL_HERE]" 
+  logoUrl = "[INSERT_LOGO_URL_HERE]",
+  visibleMetrics,
+  onToggleMetric
 }: DashboardHeaderProps) {
   return (
     <header className="w-full bg-card border-b border-border px-6 py-4">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img 
             src="/lovable-uploads/58030552-ef5b-484d-bb0e-66450b796c1d.png" 
@@ -31,8 +36,17 @@ export function DashboardHeader({
           </div>
         </div>
         
-        <div className="ml-auto flex items-center">
+        <div className="flex items-center">
           <p className="text-lg font-bold text-primary">{clientName}</p>
+        </div>
+
+        <div className="flex items-center">
+          {visibleMetrics && onToggleMetric && (
+            <MetricsVisibilityPanel 
+              visibleMetrics={visibleMetrics}
+              onToggleMetric={onToggleMetric}
+            />
+          )}
         </div>
       </div>
     </header>

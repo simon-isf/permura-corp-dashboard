@@ -8,7 +8,6 @@ import { FilterBar } from "@/components/dashboard/FilterBar";
 import { AppointmentsTable } from "@/components/dashboard/AppointmentsTable";
 import { AppointmentBreakdown } from "@/components/dashboard/AppointmentBreakdown";
 import { TimeSeriesChart } from "@/components/dashboard/TimeSeriesChart";
-import { MetricsVisibilityPanel } from "@/components/dashboard/MetricsVisibilityPanel";
 import { MetricCard } from "@/components/ui/metric-card";
 
 // Data
@@ -105,15 +104,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-dashboard-bg">
-      <DashboardHeader />
+      <DashboardHeader 
+        visibleMetrics={visibleMetrics}
+        onToggleMetric={toggleMetric}
+      />
       
       <main className="container mx-auto px-6 py-6">
-        {/* Metrics Visibility Panel */}
-        <MetricsVisibilityPanel 
-          visibleMetrics={visibleMetrics}
-          onToggleMetric={toggleMetric}
-        />
-
         {/* Filters */}
         <FilterBar
           closers={closers}

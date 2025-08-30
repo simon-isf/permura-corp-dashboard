@@ -42,8 +42,7 @@ export const MetricsVisibilityPanel = ({ visibleMetrics, onToggleMetric }: Metri
   };
 
   return (
-    <div className="flex justify-end mb-4">
-      <Sheet>
+    <Sheet>
         <SheetTrigger asChild>
           <Button variant="outline" className="gap-2">
             <Eye className="h-4 w-4" />
@@ -118,6 +117,5 @@ export const MetricsVisibilityPanel = ({ visibleMetrics, onToggleMetric }: Metri
           </div>
         </SheetContent>
       </Sheet>
-    </div>
   );
 };
