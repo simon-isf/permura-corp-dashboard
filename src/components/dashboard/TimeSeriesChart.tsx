@@ -155,7 +155,6 @@ export const TimeSeriesChart = ({ appointments, dateRange }: TimeSeriesChartProp
                     color: 'hsl(var(--foreground))'
                   }}
                 />
-                <Legend />
                 
                 {visibleMetrics.totalAppointments && (
                   <Line
