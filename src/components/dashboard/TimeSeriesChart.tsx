@@ -4,6 +4,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { GripVertical } from 'lucide-react';
 import { Appointment } from '@/data/mockData';
 
 interface TimeSeriesChartProps {
@@ -21,6 +23,17 @@ export const TimeSeriesChart = ({ appointments, dateRange }: TimeSeriesChartProp
     totalFollowUps: false,
     totalCloses: false,
   });
+
+  const [focusedMetric, setFocusedMetric] = useState<string | null>(null);
+  const [metricOrder, setMetricOrder] = useState([
+    'totalAppointments',
+    'totalSits', 
+    'totalNoShows',
+    'totalReschedules',
+    'totalDisqualifies',
+    'totalFollowUps',
+    'totalCloses'
+  ]);
 
   const chartData = useMemo(() => {
     const days = eachDayOfInterval(dateRange);
@@ -51,6 +64,21 @@ export const TimeSeriesChart = ({ appointments, dateRange }: TimeSeriesChartProp
     }));
   };
 
+  const handleMetricClick = (metric: string) => {
+    if (focusedMetric === metric) {
+      setFocusedMetric(null); // Unfocus if clicking the same metric
+    } else {
+      setFocusedMetric(metric);
+    }
+  };
+
+  const moveMetric = (fromIndex: number, toIndex: number) => {
+    const newOrder = [...metricOrder];
+    const [moved] = newOrder.splice(fromIndex, 1);
+    newOrder.splice(toIndex, 0, moved);
+    setMetricOrder(newOrder);
+  };
+
   const metricColors = {
     totalAppointments: '#10b981', // emerald-500
     totalSits: '#3b82f6', // blue-500
@@ -59,6 +87,16 @@ export const TimeSeriesChart = ({ appointments, dateRange }: TimeSeriesChartProp
     totalDisqualifies: '#6b7280', // gray-500
     totalFollowUps: '#8b5cf6', // violet-500
     totalCloses: '#06b6d4', // cyan-500
+  };
+
+  const getLineOpacity = (metric: string) => {
+    if (!focusedMetric) return 1;
+    return focusedMetric === metric ? 1 : 0.3;
+  };
+
+  const getLineStrokeWidth = (metric: string) => {
+    if (!focusedMetric) return 2;
+    return focusedMetric === metric ? 3 : 2;
   };
 
   const metricLabels = {
@@ -124,7 +162,8 @@ export const TimeSeriesChart = ({ appointments, dateRange }: TimeSeriesChartProp
                     type="monotone"
                     dataKey="totalAppointments"
                     stroke={metricColors.totalAppointments}
-                    strokeWidth={2}
+                    strokeWidth={getLineStrokeWidth('totalAppointments')}
+                    strokeOpacity={getLineOpacity('totalAppointments')}
                     name="Total Appointments"
                     dot={{ fill: metricColors.totalAppointments, strokeWidth: 2, r: 4 }}
                   />
@@ -134,7 +173,8 @@ export const TimeSeriesChart = ({ appointments, dateRange }: TimeSeriesChartProp
                     type="monotone"
                     dataKey="totalSits"
                     stroke={metricColors.totalSits}
-                    strokeWidth={2}
+                    strokeWidth={getLineStrokeWidth('totalSits')}
+                    strokeOpacity={getLineOpacity('totalSits')}
                     name="Total Sits"
                     dot={{ fill: metricColors.totalSits, strokeWidth: 2, r: 4 }}
                   />
@@ -144,7 +184,8 @@ export const TimeSeriesChart = ({ appointments, dateRange }: TimeSeriesChartProp
                     type="monotone"
                     dataKey="totalNoShows"
                     stroke={metricColors.totalNoShows}
-                    strokeWidth={2}
+                    strokeWidth={getLineStrokeWidth('totalNoShows')}
+                    strokeOpacity={getLineOpacity('totalNoShows')}
                     name="Total No-Shows"
                     dot={{ fill: metricColors.totalNoShows, strokeWidth: 2, r: 4 }}
                   />
@@ -154,7 +195,8 @@ export const TimeSeriesChart = ({ appointments, dateRange }: TimeSeriesChartProp
                     type="monotone"
                     dataKey="totalReschedules"
                     stroke={metricColors.totalReschedules}
-                    strokeWidth={2}
+                    strokeWidth={getLineStrokeWidth('totalReschedules')}
+                    strokeOpacity={getLineOpacity('totalReschedules')}
                     name="Total Reschedules"
                     dot={{ fill: metricColors.totalReschedules, strokeWidth: 2, r: 4 }}
                   />
@@ -164,7 +206,8 @@ export const TimeSeriesChart = ({ appointments, dateRange }: TimeSeriesChartProp
                     type="monotone"
                     dataKey="totalDisqualifies"
                     stroke={metricColors.totalDisqualifies}
-                    strokeWidth={2}
+                    strokeWidth={getLineStrokeWidth('totalDisqualifies')}
+                    strokeOpacity={getLineOpacity('totalDisqualifies')}
                     name="Total Disqualifies"
                     dot={{ fill: metricColors.totalDisqualifies, strokeWidth: 2, r: 4 }}
                   />
@@ -174,7 +217,8 @@ export const TimeSeriesChart = ({ appointments, dateRange }: TimeSeriesChartProp
                     type="monotone"
                     dataKey="totalFollowUps"
                     stroke={metricColors.totalFollowUps}
-                    strokeWidth={2}
+                    strokeWidth={getLineStrokeWidth('totalFollowUps')}
+                    strokeOpacity={getLineOpacity('totalFollowUps')}
                     name="Total Follow-ups"
                     dot={{ fill: metricColors.totalFollowUps, strokeWidth: 2, r: 4 }}
                   />
@@ -184,13 +228,51 @@ export const TimeSeriesChart = ({ appointments, dateRange }: TimeSeriesChartProp
                     type="monotone"
                     dataKey="totalCloses"
                     stroke={metricColors.totalCloses}
-                    strokeWidth={2}
+                    strokeWidth={getLineStrokeWidth('totalCloses')}
+                    strokeOpacity={getLineOpacity('totalCloses')}
                     name="Total Closes"
                     dot={{ fill: metricColors.totalCloses, strokeWidth: 2, r: 4 }}
                   />
                 )}
               </LineChart>
             </ResponsiveContainer>
+          </div>
+          
+          {/* Custom Metric Legend */}
+          <div className="mt-6 border-t pt-4">
+            <div className="flex flex-wrap gap-2 justify-center">
+              {metricOrder.map((key) => (
+                visibleMetrics[key as keyof typeof visibleMetrics] && (
+                  <Button
+                    key={key}
+                    variant="ghost"
+                    size="sm"
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+                      focusedMetric === key 
+                        ? 'bg-card-hover border-2 shadow-sm' 
+                        : focusedMetric 
+                          ? 'opacity-50 hover:opacity-75' 
+                          : 'hover:bg-card-hover'
+                    }`}
+                    onClick={() => handleMetricClick(key)}
+                  >
+                    <div 
+                      className="w-3 h-0.5 rounded-full"
+                      style={{ backgroundColor: metricColors[key as keyof typeof metricColors] }}
+                    />
+                    <span 
+                      className="text-sm font-medium"
+                      style={{ color: metricColors[key as keyof typeof metricColors] }}
+                    >
+                      {metricLabels[key as keyof typeof metricLabels]}
+                    </span>
+                  </Button>
+                )
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Click on a metric to highlight it. Click again to show all metrics.
+            </p>
           </div>
         </CardContent>
       </Card>
