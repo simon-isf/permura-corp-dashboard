@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Appointment } from "@/data/mockData";
+import { Appointment } from "@/services/appointmentsService";
 
 interface AppointmentsTableProps {
   appointments: Appointment[];
@@ -190,8 +190,8 @@ export function AppointmentsTable({ appointments }: AppointmentsTableProps) {
               </TableHeader>
               <TableBody>
                 {paginatedAppointments.map((appointment, index) => (
-                  <TableRow 
-                    key={appointment.contact_ID} 
+                  <TableRow
+                    key={appointment.id || `appointment-${index}`}
                     className="border-border hover:bg-dashboard-surface-hover transition-colors"
                   >
                     <TableCell className="font-medium text-foreground">

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Appointment } from "@/data/mockData";
+import { Appointment } from "@/services/appointmentsService";
 
 interface AppointmentBreakdownProps {
   appointments: Appointment[];
@@ -22,7 +22,7 @@ export function AppointmentBreakdown({ appointments }: AppointmentBreakdownProps
     };
     
     appointments.forEach(apt => {
-      const score = apt.credit_score;
+      const score = apt.credit_score ? parseInt(apt.credit_score) : 0;
       if (score >= 600 && score <= 650) creditScoreRanges['600-650']++;
       else if (score >= 651 && score <= 700) creditScoreRanges['651-700']++;
       else if (score >= 701 && score <= 750) creditScoreRanges['701-750']++;

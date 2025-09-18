@@ -1,5 +1,6 @@
-import { Building2 } from "lucide-react";
 import { MetricsVisibilityPanel } from "./MetricsVisibilityPanel";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCompany } from "@/hooks/useCompanies";
 
 interface DashboardHeaderProps {
   clientName?: string;
@@ -8,19 +9,24 @@ interface DashboardHeaderProps {
   onToggleMetric?: (metric: string) => void;
 }
 
-export function DashboardHeader({ 
-  clientName = "{{client_name}}", 
+export function DashboardHeader({
+  clientName = "{{client_name}}",
   logoUrl = "[INSERT_LOGO_URL_HERE]",
   visibleMetrics,
   onToggleMetric
 }: DashboardHeaderProps) {
+  const { profile, isSuperAdmin } = useAuth();
+  const { company } = useCompany(profile?.company_id ?? null);
+
+  const displayName = isSuperAdmin ? "Master Dashboard" : (company?.company_name ?? clientName);
+
   return (
     <header className="w-full bg-card border-b border-border px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img 
-            src="/lovable-uploads/58030552-ef5b-484d-bb0e-66450b796c1d.png" 
-            alt="Premura Call Center Dashboard" 
+          <img
+            src="/lovable-uploads/58030552-ef5b-484d-bb0e-66450b796c1d.png"
+            alt="Premura Call Center Dashboard"
             className="h-12 w-12 rounded-lg"
             onError={(e) => {
               // Fallback to icon if image fails to load
@@ -35,14 +41,14 @@ export function DashboardHeader({
             <p className="text-sm text-muted-foreground">Analytics Dashboard</p>
           </div>
         </div>
-        
+
         <div className="flex items-center">
-          <p className="text-lg font-bold text-primary">{clientName}</p>
+          <p className="text-lg font-bold text-primary">{displayName}</p>
         </div>
 
         <div className="flex items-center">
           {visibleMetrics && onToggleMetric && (
-            <MetricsVisibilityPanel 
+            <MetricsVisibilityPanel
               visibleMetrics={visibleMetrics}
               onToggleMetric={onToggleMetric}
             />

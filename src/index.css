@@ -68,6 +68,8 @@
     
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
@@ -78,5 +80,102 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Enhanced loading animations */
+  .loading-overlay-enter {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    transform: scale(0.95);
+  }
+
+  .loading-overlay-enter-active {
+    opacity: 1;
+    backdrop-filter: blur(4px);
+    transform: scale(1);
+    transition: opacity 0.3s ease-out, backdrop-filter 0.3s ease-out, transform 0.3s ease-out;
+  }
+
+  .loading-overlay-exit {
+    opacity: 1;
+    backdrop-filter: blur(4px);
+    transform: scale(1);
+  }
+
+  .loading-overlay-exit-active {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    transform: scale(0.95);
+    transition: opacity 0.2s ease-in, backdrop-filter 0.2s ease-in, transform 0.2s ease-in;
+  }
+
+  /* Smooth filter transitions */
+  .filter-updating {
+    transition: var(--transition-smooth);
+    opacity: 0.7;
+  }
+
+  /* Enhanced spinner animation */
+  .spinner-enhanced {
+    animation: spin-enhanced 1s linear infinite;
+  }
+
+  @keyframes spin-enhanced {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Pulse animation for loading states */
+  .pulse-subtle {
+    animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-subtle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  /* Smooth card transitions */
+  .card-transition {
+    transition: var(--transition-smooth);
+  }
+
+  .card-transition:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  /* Mobile-friendly touch interactions */
+  @media (hover: none) and (pointer: coarse) {
+    .card-transition:hover {
+      transform: none;
+      box-shadow: var(--shadow-card);
+    }
+
+    .card-transition:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease-out;
+    }
+  }
+
+  /* Enhanced mobile responsiveness */
+  @media (max-width: 640px) {
+    .loading-overlay-enter,
+    .loading-overlay-enter-active {
+      backdrop-filter: blur(2px);
+    }
+
+    /* Reduce motion for users who prefer it */
+    @media (prefers-reduced-motion: reduce) {
+      .card-transition,
+      .loading-overlay-enter-active,
+      .loading-overlay-exit-active,
+      .spinner-enhanced {
+        animation: none;
+        transition: none;
+      }
+    }
   }
 }

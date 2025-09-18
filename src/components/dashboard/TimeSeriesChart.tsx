@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { GripVertical } from 'lucide-react';
-import { Appointment } from '@/data/mockData';
+import { Appointment } from '@/services/appointmentsService';
 
 interface TimeSeriesChartProps {
   appointments: Appointment[];
