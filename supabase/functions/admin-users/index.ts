@@ -36,8 +36,17 @@ serve(async (req) => {
     // Create admin client for user management
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SERVICE_ROLE_KEY') ?? '',
     )
+
+    // Ensure service role key is configured (secrets cannot start with SUPABASE_)
+    if (!Deno.env.get('SERVICE_ROLE_KEY')) {
+      return new Response(
+        JSON.stringify({ error: 'SERVICE_ROLE_KEY not set for admin-users function' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
 
     // Get user from JWT token
     const {
@@ -48,9 +57,9 @@ serve(async (req) => {
     if (userError || !user) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -62,9 +71,9 @@ serve(async (req) => {
     if (roleError || !isSuperAdmin) {
       return new Response(
         JSON.stringify({ error: 'Forbidden: Super admin access required' }),
-        { 
-          status: 403, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -87,9 +96,9 @@ serve(async (req) => {
         if (error) {
           return new Response(
             JSON.stringify({ error: error.message }),
-            { 
-              status: 500, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             }
           )
         }
@@ -103,7 +112,7 @@ serve(async (req) => {
                 .select('company_name')
                 .eq('company_id', profile.company_id)
                 .single()
-              
+
               return {
                 ...profile,
                 company_name: company?.company_name || null
@@ -115,87 +124,157 @@ serve(async (req) => {
 
         return new Response(
           JSON.stringify(profilesWithCompanies),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
         )
       }
 
       case 'POST': {
-        // Create new user
-        const userData: UserData = await req.json()
+        try {
+          console.log('POST request received for user creation')
 
-        if (!userData.email || !userData.password || !userData.role) {
-          return new Response(
-            JSON.stringify({ error: 'email, password, and role are required' }),
-            { 
-              status: 400, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-            }
-          )
-        }
+          // Create new user
+          const userData: UserData = await req.json()
+          console.log('Parsed user data:', {
+            email: userData.email,
+            role: userData.role,
+            company_id: userData.company_id,
+            hasPassword: !!userData.password
+          })
 
-        // Create user using admin client
-        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-          email: userData.email,
-          password: userData.password,
-          email_confirm: true
-        })
+          if (!userData.email || !userData.password || !userData.role) {
+            console.log('Missing required fields')
+            return new Response(
+              JSON.stringify({ error: 'email, password, and role are required' }),
+              {
+                status: 400,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              }
+            )
+          }
 
-        if (createError) {
-          return new Response(
-            JSON.stringify({ error: createError.message }),
-            { 
-              status: 500, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-            }
-          )
-        }
+          // Enforce company rules by role at the API boundary
+          // - Regular users must have a company_id
+          // - Super admins must not be tied to a company (force NULL)
+          if (userData.role === 'user' && (!userData.company_id || userData.company_id.trim() === '')) {
+            console.log('User role requires company_id but none provided')
+            return new Response(
+              JSON.stringify({ error: 'company_id is required when role is "user"' }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
 
-        // Create profile
-        const { data: profile, error: profileError } = await supabaseAdmin
-          .from('profiles')
-          .insert([{
+          // For super admins, always set company_id to null
+          // For regular users, use the provided company_id (but convert empty strings to null)
+          const normalizedCompanyId = userData.role === 'super_admin'
+            ? null
+            : (userData.company_id && userData.company_id.trim() !== '' ? userData.company_id : null)
+
+          console.log('Normalized company_id:', normalizedCompanyId)
+
+          // Create user using admin client
+          console.log('Creating auth user...')
+          const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+            email: userData.email,
+            password: userData.password,
+            email_confirm: true
+          })
+
+          if (createError) {
+            console.error('Auth user creation failed:', createError)
+            return new Response(
+              JSON.stringify({
+                error: 'Failed to create auth user',
+                details: createError.message,
+                code: createError.code || 'unknown'
+              }),
+              {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              }
+            )
+          }
+
+          console.log('Auth user created successfully, ID:', newUser.user.id)
+
+          // Create profile
+          const profileData = {
             id: newUser.user.id,
             email: userData.email,
             role: userData.role,
-            company_id: userData.company_id || null
-          }])
-          .select()
-          .single()
+            company_id: normalizedCompanyId
+          }
+          console.log('Creating profile with data:', profileData)
 
-        if (profileError) {
-          // If profile creation fails, delete the user
-          await supabaseAdmin.auth.admin.deleteUser(newUser.user.id)
+          const { data: profile, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .upsert([profileData], { onConflict: 'id' })
+            .select()
+            .single()
+
+          if (profileError) {
+            console.error('Profile creation failed:', {
+              error: profileError,
+              message: profileError.message,
+              details: profileError.details,
+              hint: profileError.hint,
+              code: profileError.code
+            })
+
+            // If profile creation fails, delete the user
+            console.log('Cleaning up auth user due to profile creation failure')
+            await supabaseAdmin.auth.admin.deleteUser(newUser.user.id)
+
+            return new Response(
+              JSON.stringify({
+                error: 'Failed to create user profile',
+                details: profileError.message,
+                hint: profileError.hint,
+                code: profileError.code
+              }),
+              {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              }
+            )
+          }
+
+          console.log('Profile upserted successfully:', profile.id)
           return new Response(
-            JSON.stringify({ error: profileError.message }),
-            { 
-              status: 500, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            JSON.stringify(profile),
+            {
+              status: 201,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        } catch (error) {
+          console.error('Unexpected error in POST handler:', error)
+          return new Response(
+            JSON.stringify({
+              error: 'Internal server error',
+              details: error.message,
+              stack: error.stack
+            }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             }
           )
         }
-
-        return new Response(
-          JSON.stringify(profile),
-          { 
-            status: 201,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        )
       }
 
       case 'PUT': {
         // Update user profile
         const url = new URL(req.url)
         const userId = url.searchParams.get('id')
-        
+
         if (!userId) {
           return new Response(
             JSON.stringify({ error: 'User ID is required' }),
-            { 
-              status: 400, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             }
           )
         }
@@ -237,17 +316,17 @@ serve(async (req) => {
         if (error) {
           return new Response(
             JSON.stringify({ error: error.message }),
-            { 
-              status: 500, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             }
           )
         }
 
         return new Response(
           JSON.stringify(profile),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
         )
       }
@@ -256,13 +335,13 @@ serve(async (req) => {
         // Delete user
         const url = new URL(req.url)
         const userId = url.searchParams.get('id')
-        
+
         if (!userId) {
           return new Response(
             JSON.stringify({ error: 'User ID is required' }),
-            { 
-              status: 400, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             }
           )
         }
@@ -273,17 +352,17 @@ serve(async (req) => {
         if (error) {
           return new Response(
             JSON.stringify({ error: error.message }),
-            { 
-              status: 500, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             }
           )
         }
 
         return new Response(
           JSON.stringify({ success: true }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
         )
       }
@@ -291,9 +370,9 @@ serve(async (req) => {
       default:
         return new Response(
           JSON.stringify({ error: 'Method not allowed' }),
-          { 
-            status: 405, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          {
+            status: 405,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
         )
     }
@@ -301,9 +380,9 @@ serve(async (req) => {
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }

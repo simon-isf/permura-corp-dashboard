@@ -35,7 +35,15 @@ const Users: React.FC = () => {
     if (!newUser.email || !newUser.password || (newUser.role === 'user' && !newUser.company_id)) return
 
     try {
-      await createUserMutation.mutateAsync(newUser)
+      // Prepare the user data, ensuring super admins don't have a company_id
+      const userData = {
+        email: newUser.email,
+        password: newUser.password,
+        role: newUser.role,
+        ...(newUser.role === 'user' && newUser.company_id ? { company_id: newUser.company_id } : {})
+      }
+
+      await createUserMutation.mutateAsync(userData)
       setIsCreateDialogOpen(false)
       setNewUser({ email: '', password: '', role: 'user', company_id: '' })
     } catch (error) {
